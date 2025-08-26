@@ -176,8 +176,6 @@ function displayWinRatesInGrid(data, gridId, title) {
       if (winRateData.totalCount === 0) {
     return; // ✅ Only skip if there's truly no data
 }
-
-
         visibleCount++;
 
         const branchDiv = document.createElement('div');

@@ -6,14 +6,23 @@ body {
 }
 
 /* Navigation Bar */
-
 nav a {
   transition: background 0.17s, color 0.17s, border 0.17s;
 }
+
 nav a:hover {
   background: #e6f0fa;
   color: #0060c7;
   border-color: #0060c7;
+}
+
+th{
+  font-size: 24px !important;
+  font-weight: bolder !important;
+}
+
+tr{
+  font-size: 20px;
 }
 
 /* Centered Card Container for Content */

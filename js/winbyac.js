@@ -34,8 +34,7 @@ const filterFormula = `
         console.error("No records fetched from Airtable.");
         return;
     }
-    
-   
+       
     residentialWinRates = calculateWinRates2(residentialRecords);
 
     // Filter out "Unknown User"
@@ -60,7 +59,6 @@ const filterFormula = `
     hideLoadingMessages2();
 }
 
-
 function populateDropdown9(users, dropdownId) {
     const dropdown = document.getElementById(dropdownId);
     if (!dropdown) {
@@ -68,8 +66,7 @@ function populateDropdown9(users, dropdownId) {
         return;
     } else {
     }
-    
-
+   
     // Clear existing options
     dropdown.innerHTML = '<option value="all">All ACs</option>';
 
@@ -150,7 +147,6 @@ const filterFormula = `
     }
 }
 
-
 function displayLoadingMessages2(message) {
     const fetchProgress = document.getElementById('fetch-progress');
     if (fetchProgress) {
@@ -160,7 +156,6 @@ function displayLoadingMessages2(message) {
         console.warn('Fetch progress element not found.');
     }
 }
-
 
 function hideLoadingMessages2() {
     const fetchProgress = document.getElementById('fetch-progress');
@@ -189,7 +184,6 @@ function calculateWinRates2(records) {
         data[submittedBy].totalCount += 1;
     });
 
-
     const winRates = {};
     for (const submittedBy in data) {
         const { winCount, lossCount, totalCount } = data[submittedBy];
@@ -203,7 +197,6 @@ function calculateWinRates2(records) {
     }
     return winRates;
 }
-
 
 function displayWinRatesAsBarChart2(data, canvasId) {
     const canvas = document.getElementById(canvasId);

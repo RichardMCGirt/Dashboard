@@ -1,6 +1,5 @@
 let residentialWinRates88 = {};
 
-
 document.addEventListener('DOMContentLoaded', function () {
     initializet();
 
@@ -28,7 +27,7 @@ async function initializet() {
         `AND({Position} = "Commercial Project Manager", {Status} = "Active")`
     );
 
-   
+
     // Aggregate and sort data
     residentialWinRates88 = calculateTotalRecordsByPM(residentialRecords, secondaryRecords); // ✅ NO `let`
    
@@ -46,13 +45,10 @@ displayWinRatesAsBarChart4(residentialWinRates88, 'FDL');
     hideLoadingMessages2();
 }
 
-
-
 function hideLoadingMessages2() {
     const fetchProgress = document.getElementById('fetch-progress3');
     fetchProgress.style.display = 'none';
 }
-
 
 function displayLoadingMessages2(message) {
     const fetchProgress = document.getElementById('fetch-progress3');
@@ -103,11 +99,8 @@ function mergeMissingNames(existingData, secondaryRecords) {
             updatedData[name] = { totalCount: 0 };
         }
     });
-
-
     return updatedData;
 }
-
 
 function capitalizeName(name) {
     if (!name) return "Unknown"; // Handle empty names
@@ -146,8 +139,6 @@ async function fetchAirtableDatas4(apiKey, baseId, tableName, formula) {
                 if (record.fields['Date Record Created']) {
                     const utcDate = new Date(record.fields['Date Record Created']);
                     record.fields['NYC_Time'] = utcDate.toLocaleString("en-US", { timeZone: "America/New_York" });
-
-                
                 }
             });
 
@@ -164,7 +155,6 @@ async function fetchAirtableDatas4(apiKey, baseId, tableName, formula) {
         return [];
     }
 }
-
 
 function populateDropdown4(users, dropdownId) {
     const dropdown = document.getElementById(dropdownId);
@@ -203,13 +193,9 @@ function populateDropdown4(users, dropdownId) {
             : residentialWinRates88[selectedUser]
             ? { [selectedUser]: residentialWinRates88[selectedUser] }
             : {};
-    
-
         displayWinRatesAsBarChart4(filteredData, 'FDL');
     });
 }
-
-
 
 function displayWinRatesAsBarChart4(data, canvasId) {
     const canvas = document.getElementById(canvasId);

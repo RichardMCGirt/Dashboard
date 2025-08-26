@@ -4,8 +4,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     const airtableTableName = 'tblfCPX293KlcKsdp';
     let expectedRevenueChartInstance = null;
 
-   
-
     async function fetchData(offset = null) {
         let url = `https://api.airtable.com/v0/${airtableBaseId}/${airtableTableName}?pageSize=100`;
         if (offset) url += `&offset=${offset}`;
@@ -28,8 +26,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             return { records: [] };
         }
     }
-
-
 
 async function fetchAllData() {
   let allRecords = [];
@@ -94,9 +90,6 @@ async function fetchAllData() {
 
   return allRecords;
 }
-
-
-
 
 async function processRecords(allRecords) {
   if (!allRecords || allRecords.length === 0) {
@@ -209,11 +202,6 @@ async function processRecords(allRecords) {
   createRevenueChart(revenueByDivision, sortedMonths);
 }
 
-
-
-
-
-
  function createRevenueChart(revenueByDivision, months) {
     // 👉 Get division names and sort them alphabetically
     const divisions = Object.keys(revenueByDivision).sort((a, b) => {
@@ -234,8 +222,6 @@ const colors = [
   'rgba(153, 142, 60, 0.8)', // Olive gold
   'rgba(38, 139, 210, 0.8)'  // Soft sky blue
 ];
-
-
 
     divisions.forEach((division, index) => {
         const data = months.map(month => revenueByDivision[division][month] || 0);
@@ -303,9 +289,7 @@ const colors = [
     });
 }
 
-
     const allRecords = await fetchAllData();
     await processRecords(allRecords);
 
-   
 });

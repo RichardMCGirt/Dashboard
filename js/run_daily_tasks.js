@@ -1,6 +1,5 @@
 let downloadURL = null;
 
-
 const { execSync } = require('child_process');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -82,9 +81,6 @@ async function loginAndDownloadCSV(username, password) {
     });
 
     const page = await browser.newPage();
-
-    // ⬇️ 1. Define outside so we can use it later
-    let downloadURL = null;
 
     page.on('response', async (response) => {
         const url = response.url();

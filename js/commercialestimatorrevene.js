@@ -75,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("🗺️ Estimator ID to Name Map:", estimatorMap);
         return estimatorMap;
     }
-    
 
     async function fetchAllData() {
         let allRecords = [];
@@ -122,7 +121,6 @@ allRecords.forEach(record => {
     bidNamesByEstimator[estimatorName].push(bidName);
 });
 
-    
         console.log("📊 Final revenue by estimator:", revenueByEstimator);
     
         createBarChart(revenueByEstimator, bidNamesByEstimator);
@@ -137,8 +135,6 @@ allRecords.forEach(record => {
         });
     }
     
-    
-
     function createBarChart(revenueByEstimator, bidNamesByEstimator) {
         const sortedData = Object.entries(revenueByEstimator)
             .sort((a, b) => a[1] - b[1]); // ascending
@@ -197,7 +193,5 @@ allRecords.forEach(record => {
             }
         });
     }
-    
-
     await processRecords();
 });

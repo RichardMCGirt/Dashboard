@@ -42,7 +42,7 @@ app.get('/fetch-report', (req, res) => {
 // **Delete a file from FTP**
 app.delete('/delete-file', (req, res) => {
     const client = new ftp();
-    const filePath = '/downloads/SalesRegisterSummaryReport-1730994522-1793612095.csv'; // Change this to the file you want to delete
+    const filePath = '/downloads/SalesRegisterSummaryReport-1730994522-1793612095.csv'; 
 
     client.on('ready', () => {
         client.delete(filePath, (err) => {

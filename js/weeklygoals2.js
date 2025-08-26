@@ -67,7 +67,7 @@ function gisLoaded() {
   
   const res = await gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: 'Sheet1!A1:Z100',
+range: "'Weekly Goals'!A1:Z100"
   });
   const rows = res.result.values;
   if (!rows || rows.length === 0) {

@@ -106,11 +106,26 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-  
-
     // Fetch data, create chart, and set up the export button
     const allRecords = await fetchAllData();
     createBarChart(allRecords);
 
    
 });
+
+setTimeout(() => {
+  console.log("⏳ 45 seconds passed, hiding elements...");
+
+  document.querySelectorAll(
+    "#record-count3, #record-count2, #live-update-container, #record-countNew"
+  ).forEach(el => {
+    if (el) {
+      console.log("✅ Hiding element:", el.id);
+      el.style.display = "none";
+    } else {
+      console.log("⚠️ Element not found.");
+    }
+  });
+
+  console.log("🎉 Done hiding specified elements.");
+}, 50000); // 50000 ms = 50 seconds

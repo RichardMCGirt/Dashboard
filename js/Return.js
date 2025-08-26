@@ -192,8 +192,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             }
         });
-
-        
     }
 
     function exportToCSV(records) {
@@ -239,7 +237,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     locationDropdown.addEventListener('change', function () {
         const selectedLocation = locationDropdown.value;
         
-
         if (selectedLocation) {
             const filteredRecords = filterRecordsByLocation(allRecords, selectedLocation);
             createBarChart(filteredRecords, selectedLocation);
