@@ -38,6 +38,10 @@ tr{
   box-shadow: 0 4px 28px rgba(0,0,0,0.09);
   margin-top: 22px;
   margin-bottom: 60px;
+
+  /* enable scrolling for sticky column context */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 #table-container { 
   display: none; }
@@ -67,27 +71,30 @@ h1 {
 #table-container table {
   border-collapse: separate;
   border-spacing: 0;
-  width: 90%;
+  /* let content define width; container handles scroll */
+  width: max-content;
+  max-width: 100%;
   margin: 18px auto 0 auto;
   background: #f8fafc;
   border-radius: 14px;
   box-shadow: 0 1.5px 9px rgba(10, 47, 100, 0.08);
   overflow: hidden;
-  table-layout: fixed;
+  table-layout: auto; /* better natural sizing */
   min-width: 640px;
 }
 #table-container th,
 #table-container td {
   border: 1.8px solid #b6c8e6 !important;
-  padding: 14px 8px;
-  min-width: 86px;
-  text-align: center;
-  vertical-align: middle;
+  padding: 16px 12px;       /* breathing room */
+  min-width: auto;
+  line-height: 1.5;         /* readability */
   background: #fff;
   font-size: 1em;
   color: #24375d;
   box-sizing: border-box;
   transition: background 0.12s;
+  hyphens: auto;
+  white-space: normal;
 }
 #table-container th {
   background: linear-gradient(90deg, #e9f2ff 65%, #d1e6fb 100%);
@@ -96,6 +103,11 @@ h1 {
   color: #114a8d;
   border-bottom: 2.2px solid #0056b3 !important;
   letter-spacing: 0.01em;
+  text-align: center;
+}
+#table-container td {
+  text-align: left;
+  vertical-align: top;
 }
 #table-container td:empty::after {
   content: "\00a0";
@@ -105,11 +117,29 @@ h1 {
   background: #f0f7ff !important;
 }
 
-/* Hide first column if desired */
+/* === Sticky first column (header + cells) === */
+#table-container table th:first-child,
+#table-container table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;               /* stay above scrolling cells */
+  background: #fff;         /* ensure not transparent */
+  /* subtle divider on the right edge of the sticky col */
+  box-shadow: 2px 0 0 0 #b6c8e6 inset;
+}
+/* keep header above body cells */
+#table-container table th:first-child {
+  z-index: 3;
+  background: linear-gradient(90deg, #e9f2ff 65%, #d1e6fb 100%);
+}
+
+/* (Removed the old rule that hid the first column) */
+/*
 #table-container table th:first-child,
 #table-container table td:first-child {
   display: none;
 }
+*/
 
 /* Button Styling */
 #authorize_button, #signout_button, #refresh_button, #copy-today-column-btn {
@@ -194,14 +224,14 @@ h1 {
     padding: 12px 4vw 8px 4vw;
     margin-bottom: 32px;
   }
-  #table-container table { min-width: 500px; width: 99%; }
+  #table-container table { min-width: 500px; width: max-content; max-width: 100%; }
 }
 @media (max-width: 700px) {
   #table-container, .download-info, #user-info {
     padding: 0 1vw;
   }
-  #table-container table { min-width: 330px; width: 100%; }
-  th, td { font-size: 0.98em; padding: 9px 3px; }
+  #table-container table { min-width: 330px; width: max-content; max-width: 100%; }
+  th, td { font-size: 0.98em; padding: 12px 8px; line-height: 1.5; }
 }
 @media (max-width: 500px) {
   #table-container {
@@ -230,4 +260,8 @@ input[type="file"] {
   background: #b6c8e6;
   border-radius: 6px;
 }
-
+#table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
