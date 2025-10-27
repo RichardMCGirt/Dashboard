@@ -1,95 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV Column Display with Count and Percentage (Average)</title>
-    <link rel="stylesheet" href="style/weeklygoals.css">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <!-- Google One Tap JS library -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSV Column Display with Count and Percentage (Average)</title>
+  <link rel="stylesheet" href="style/weeklygoals.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Horizontal scroll + sticky column styles -->
+  <style>
+    /* Scrollable container */
+    #table-container {
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-width: 100%;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+    }
+
+    /* Table must not collapse for sticky to work well across browsers */
+    #table-container table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: max-content;    /* allow wider-than-viewport */
+      min-width: 100%;
+      table-layout: auto;
+      white-space: nowrap;   /* enable clean horizontal scroll */
+    }
+
+    #table-container th,
+    #table-container td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+      background: #fff; /* needed so sticky cell covers content underneath */
+    }
+
+    /* Sticky header row */
+    #table-container thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: #f8fafc;
+      border-bottom: 2px solid #e6edf3;
+    }
+
+    /* Sticky column (header + body cells) */
+    #table-container .sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #ffffff;
+      box-shadow: 2px 0 0 rgba(0,0,0,0.06);
+    }
+    #table-container thead .sticky-col {
+      z-index: 4;
+      background: #f8fafc;
+    }
+  </style>
 </head>
 <body>
-    <!-- MOVE THIS INTO BODY -->
-    <div id="g_id_onload"
-         data-client_id="518347118969-drq9o3vr7auf78l16qcteor9ng4nv7qd.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-auto_prompt="true"
-         data-callback="handleOneTapCredentialResponse">
+  <div id="g_id_onload"
+       data-client_id="518347118969-drq9o3vr7auf78l16qcteor9ng4nv7qd.apps.googleusercontent.com"
+       data-context="signin"
+       data-ux_mode="popup"
+       data-auto_prompt="true"
+       data-callback="handleOneTapCredentialResponse">
+  </div>
+
+  <nav style="text-align: center; margin: 20px 0;">
+    <ul style="list-style-type: none; padding: 0; display: inline-flex; gap: 40px;">
+      <li>
+        <a href="index.html" style="text-decoration: none; color: #0056b3; font-weight: bold; font-size: 18px; padding: 10px 20px; border: 2px solid #0056b3; border-radius: 5px; transition: all 0.3s;">
+          Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="/Po.html" style="text-decoration: none; color: #0056b3; font-weight: bold; font-size: 18px; padding: 10px 20px; border: 2px solid #0056b3; border-radius: 5px; transition: all 0.3s;">
+          PO Percentage by Counter Person
+        </a>
+      </li>
+      <li>
+        <a href="/So.html" style="text-decoration: none; color: #0056b3; font-weight: bold; font-size: 18px; padding: 10px 20px; border: 2px solid #0056b3; border-radius: 5px; transition: all 0.3s;">
+          SO Percentage by Counter Person
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- --- Google Sheets Sign In --- -->
+  <button id="signout_button" style="display:none;margin-left:12px;font-size:1.1em;">Sign out</button>
+  <div id="user-info"></div>
+  <h1>Weekly Goals</h1>
+  <div class="download-info" id="csvDate"></div>
+  <button id="authorize_button" style="margin: 18px 0 8px 0; font-size: 1.1em;">Sign in to View Google Sheet</button>
+  <button id="refresh_button" style="display:none;">Refresh Data</button>
+  <br/>
+  <div id="toast" style="visibility:hidden; min-width:180px; background-color:#333; color:#fff; text-align:center; border-radius:8px; padding:14px; position:fixed; z-index:9999; left:50%; bottom:30px; font-size:17px; transform:translateX(-50%); transition:visibility 0s, opacity 0.5s linear; opacity:0;">
+    Refreshed!
+  </div>
+
+  <div style="display:none;">
+    <div id="dropZone">
+      <p>Drag and drop your CSV file here or</p>
+      <label for="csvFileInput" style="color: #0044cc; cursor: pointer; text-decoration: underline;">click</label>
+      to upload.
+      <input type="file" id="csvFileInput" style="display: none;" accept=".csv" />
     </div>
-    
-    <nav style="text-align: center; margin: 20px 0;">
-        <ul style="list-style-type: none; padding: 0; display: inline-flex; gap: 40px;">
-            <li>
-                <a href="index.html"  style="text-decoration: none; color: #0056b3; font-weight: bold; font-size: 18px; padding: 10px 20px; border: 2px solid #0056b3; border-radius: 5px; transition: all 0.3s;">
-                    Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="/Po.html"  style="text-decoration: none; color: #0056b3; font-weight: bold; font-size: 18px; padding: 10px 20px; border: 2px solid #0056b3; border-radius: 5px; transition: all 0.3s;">
-                    PO Percentage by Counter Person
-                </a>
-            </li>
-             <li>
-                <a href="/So.html"  style="text-decoration: none; color: #0056b3; font-weight: bold; font-size: 18px; padding: 10px 20px; border: 2px solid #0056b3; border-radius: 5px; transition: all 0.3s;">
-                  SO Percentage by Counter Person
-                </a>
-            </li>
-        </ul>
-    </nav>
+  </div>
+  <br/>
 
-    <!-- --- Google Sheets Sign In --- -->
-     <button id="signout_button" style="display:none;margin-left:12px;font-size:1.1em;">Sign out</button>
-    <div id="user-info"></div>
-    <h1>Weekly Goals</h1>
-    <div class="download-info" id="csvDate"></div>
-    <button id="authorize_button" style="margin: 18px 0 8px 0; font-size: 1.1em;">Sign in to View Google Sheet</button>
-    <button id="refresh_button" style="display:none;">Refresh Data</button>
-    <br>
-    <div id="toast" style="visibility:hidden; min-width:180px; background-color:#333; color:#fff; text-align:center; border-radius:8px; padding:14px; position:fixed; z-index:9999; left:50%; bottom:30px; font-size:17px; transform:translateX(-50%); transition:visibility 0s, opacity 0.5s linear; opacity:0;">
-  Refreshed!
-</div>
+  <!-- Scrollable container for the table -->
+  <div id="table-container"></div>
 
-    <div style="display:none;">
-      <div id="dropZone">
-        <p>Drag and drop your CSV file here or</p>
-        <label for="csvFileInput" style="color: #0044cc; cursor: pointer; text-decoration: underline;">click</label>
-        to upload.
-        <input type="file" id="csvFileInput" style="display: none;" accept=".csv" />
-      </div>
+  <div class="loading-bar-overlay" id="loadingBarOverlay" style="display: none;">
+    <div class="loading-bar-container" id="loadingBarContainer">
+      <div class="loading-bar" id="loadingBar"></div>
     </div>
-    <br>
-    <div id="table-container"></div>
-    <div class="loading-bar-overlay" id="loadingBarOverlay" style="display: none;">
-      <div class="loading-bar-container" id="loadingBarContainer">
-        <div class="loading-bar" id="loadingBar"></div>
-      </div>
-    </div>
-    <button id="copy-today-column-btn" style="display:none;position:fixed;bottom:32px;right:32px;z-index:9999;">Copy 7/21 Column Values</button>
+  </div>
+  <button id="copy-today-column-btn" style="display:none;position:fixed;bottom:32px;right:32px;z-index:9999;">Copy 7/21 Column Values</button>
 
-    <!-- Luxon must come first for date handling -->
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
-    <!-- Your main JS -->
-    <script src="js/weeklygoals2.js"></script>
-    <!-- Google API JS (for Sheets auth, etc) -->
-     <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+  <!-- Luxon for dates -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <!-- Main JS -->
+  <script src="js/weeklygoals2.js"></script>
+  <!-- Google API -->
+  <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+  <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 
-    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <!-- Only ONE gsi/client script is needed, above -->
-    <script>
-      function handleOneTapCredentialResponse(response) {
-        console.log('[One Tap] Credential response:', response);
-        const jwt = response.credential;
-        const base64Url = jwt.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const user = JSON.parse(jsonPayload);
-        console.log('[One Tap] User info:', user);
-        document.getElementById('user-info').innerText = `Hello, ${user.name}!`;
-      }
-    </script>
+  <script>
+    function handleOneTapCredentialResponse(response) {
+      console.log('[One Tap] Credential response:', response);
+      const jwt = response.credential;
+      const base64Url = jwt.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const user = JSON.parse(jsonPayload);
+      console.log('[One Tap] User info:', user);
+      document.getElementById('user-info').innerText = `Hello, ${user.name}!`;
+    }
+  </script>
 </body>
 </html>
