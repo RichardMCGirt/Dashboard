@@ -7,8 +7,6 @@ import {
    DEBUG CONFIG
    ========================= */
 const DEBUG = true;
-// IMPORTANT: show the CSV's exact date; do not add +1
-const DEBUG_ADD_ONE_DAY = false;
 
 function dbg(...args) {
   if (DEBUG) console.log('[PO DEBUG]', ...args);
@@ -54,13 +52,79 @@ document.addEventListener("DOMContentLoaded", function () {
       return '—';
     }
   }
-  function setCsvDateUI({ displayedDate, parsedDate, rawMatch, source }) {
+
+  /**
+   * Extract explicit numeric Y/M/D from a raw date snippet we matched in the CSV header/data.
+   * Supports:
+   *  - YYYY-MM-DD (optionally with time)
+   *  - MM/DD/YYYY or MM/DD/YY
+   *  - MM-DD-YYYY or MM-DD-YY
+   * Returns { y, m, d } or null.
+   */
+  function extractYMDFromRaw(raw) {
+    if (!raw) return null;
+    let m;
+    // ISO first
+    m = raw.match(/^\s*(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return { y: +m[1], m: +m[2], d: +m[3] };
+    // US slash
+    m = raw.match(/^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (m) {
+      let yyyy = m[3].length === 2 ? 2000 + (+m[3]) : +m[3];
+      return { y: yyyy, m: +m[1], d: +m[2] };
+    }
+    // US dash
+    m = raw.match(/^\s*(\d{1,2})-(\d{1,2})-(\d{2,4})/);
+    if (m) {
+      let yyyy = m[3].length === 2 ? 2000 + (+m[3]) : +m[3];
+      return { y: yyyy, m: +m[1], d: +m[2] };
+    }
+    return null;
+  }
+
+  /**
+   * Auto-adjust ONLY when the numeric day in the raw CSV text differs from the parsedDate
+   * by exactly ±1 (same year & month). This catches timezone/parse quirks without overcorrecting.
+   */
+  function resolveDisplayedDate(parsedDate, rawMatch) {
+    if (!parsedDate) return null;
+    const rawParts = extractYMDFromRaw(rawMatch);
+    if (!rawParts) return parsedDate;
+
+    const sameYear  = parsedDate.getFullYear() === rawParts.y;
+    const sameMonth = parsedDate.getMonth() + 1 === rawParts.m;
+
+    if (!sameYear || !sameMonth) {
+      // Year/month differ; assume our parsed date is correct to avoid bad jumps.
+      return parsedDate;
+    }
+
+    const parsedDay = parsedDate.getDate();
+    const delta = rawParts.d - parsedDay;
+
+    if (delta === 1) {
+      dbg('Auto-adjusting date +1 (parsed day is one behind raw).');
+      return addDays(parsedDate, 1);
+    } else if (delta === -1) {
+      dbg('Auto-adjusting date -1 (parsed day is one ahead of raw).');
+      return addDays(parsedDate, -1);
+    }
+
+    // Anything else: do not adjust
+    return parsedDate;
+  }
+
+  function setCsvDateUI({ displayedDate, parsedDate, rawMatch, source, autoAdjusted }) {
     // UI text
     csvDateEl.textContent = displayedDate ? formatLocalDate(displayedDate) : '—';
     // Helpful hover info
     const iso = parsedDate ? parsedDate.toISOString().slice(0, 10) : 'n/a';
     csvDateEl.title =
-      `Source: ${source || 'n/a'}\nRaw match: ${rawMatch || 'n/a'}\nParsed (ISO): ${iso}\nDisplayed (local): ${csvDateEl.textContent}\n(+1 applied: ${DEBUG_ADD_ONE_DAY})`;
+      `Source: ${source || 'n/a'}\n` +
+      `Raw match: ${rawMatch || 'n/a'}\n` +
+      `Parsed (ISO): ${iso}\n` +
+      `Displayed (local): ${csvDateEl.textContent}\n` +
+      `Auto-adjusted: ${!!autoAdjusted}`;
   }
 
   /* =========================
@@ -111,24 +175,23 @@ document.addEventListener("DOMContentLoaded", function () {
     const dateResult = extractReportDateVerbose(csvData);
     const parsedDate = dateResult?.date || null;
 
-    // +1 day toggle
-    const displayed = parsedDate
-      ? (DEBUG_ADD_ONE_DAY ? addDays(parsedDate, 1) : parsedDate)
-      : null;
+    // AUTO-ADJUST based on raw vs parsed mismatch by ±1 only
+    const displayed = parsedDate ? resolveDisplayedDate(parsedDate, dateResult?.raw) : null;
 
     dbg('Final Date Decision:', {
       source: dateResult?.source,
       rawMatch: dateResult?.raw,
       parsedDate: parsedDate?.toString() || null,
       displayedDate: displayed?.toString() || null,
-      addOneDay: DEBUG_ADD_ONE_DAY
+      autoAdjusted: !!(parsedDate && displayed && displayed.getTime() !== parsedDate.getTime())
     });
 
     setCsvDateUI({
       displayedDate: displayed,
       parsedDate,
       rawMatch: dateResult?.raw,
-      source: dateResult?.source
+      source: dateResult?.source,
+      autoAdjusted: !!(parsedDate && displayed && displayed.getTime() !== parsedDate.getTime())
     });
     console.groupEnd();
 
@@ -200,23 +263,23 @@ document.addEventListener("DOMContentLoaded", function () {
       const dateResult = extractReportDateVerbose(csvText);
       const parsedDate = dateResult?.date || null;
 
-      const displayed = parsedDate
-        ? (DEBUG_ADD_ONE_DAY ? addDays(parsedDate, 1) : parsedDate)
-        : null;
+      // AUTO-ADJUST based on raw vs parsed mismatch by ±1 only
+      const displayed = parsedDate ? resolveDisplayedDate(parsedDate, dateResult?.raw) : null;
 
       dbg('Final Date Decision (Local):', {
         source: dateResult?.source,
         rawMatch: dateResult?.raw,
         parsedDate: parsedDate?.toString() || null,
         displayedDate: displayed?.toString() || null,
-        addOneDay: DEBUG_ADD_ONE_DAY
+        autoAdjusted: !!(parsedDate && displayed && displayed.getTime() !== parsedDate.getTime())
       });
 
       setCsvDateUI({
         displayedDate: displayed,
         parsedDate,
         rawMatch: dateResult?.raw,
-        source: dateResult?.source
+        source: dateResult?.source,
+        autoAdjusted: !!(parsedDate && displayed && displayed.getTime() !== parsedDate.getTime())
       });
       console.groupEnd();
 
@@ -308,19 +371,63 @@ document.addEventListener("DOMContentLoaded", function () {
      ========================= */
   // Returns { date, raw, source } or null
   function extractReportDateVerbose(csvText) {
-    // 1) Look in header (first 10 lines). Prefer the **latest** date seen there.
     const headerLines = csvText.split('\n').slice(0, 10);
-    const headerJoined = headerLines.join(' ');
-    const headerDates = findAllDatesInString(headerJoined);
-    if (headerDates.length) {
-      // choose the max date from header (e.g., "10-27-2025" beats the "From/To" September dates)
-      const latestHeader = headerDates.reduce((a, b) => (b.date > a.date ? b : a));
-      dbg('Header dates found:', headerDates.map(d=>({raw:d.raw, iso:d.date.toISOString().slice(0,10)})));
-      dbg('Using latest header date:', { raw: latestHeader.raw, iso: latestHeader.date.toISOString().slice(0,10) });
-      return { date: latestHeader.date, raw: latestHeader.raw, source: 'header(0-10):latest' };
-    }
 
-    // 2) Otherwise, scan rows and keep latest parsable date (common for “Date Created” column).
+    // Collect candidates
+    const labeled    = pickLabeledHeaderDate(headerLines);        // e.g., "As of: 10/29/2025"
+    const nonRange   = pickNonRangeHeaderLatest(headerLines);     // latest header date excluding From/To ranges
+    const latestData = pickLatestDataDate(csvText);               // latest date in rows
+
+    dbg('Date candidates:', {
+      labeled: labeled ? labeled.date.toISOString().slice(0,10) : null,
+      nonRange: nonRange ? nonRange.date.toISOString().slice(0,10) : null,
+      latestData: latestData ? latestData.date.toISOString().slice(0,10) : null
+    });
+
+    // Choose the MAX among available candidates
+    const options = [labeled, nonRange, latestData].filter(Boolean);
+    if (!options.length) {
+      dbgWarn('No date detected anywhere in CSV.');
+      return null;
+    }
+    const best = options.reduce((a, b) => (b.date > a.date ? b : a));
+    const chosenSource =
+      best === labeled    ? 'header:labeled(max-of-candidates)' :
+      best === nonRange   ? 'header:non-range-latest(max-of-candidates)' :
+                            'data(latest,max-of-candidates)';
+
+    dbg('Using best date:', { raw: best.raw, iso: best.date.toISOString().slice(0,10), source: chosenSource });
+    return { date: best.date, raw: best.raw, source: chosenSource };
+  }
+
+  function pickLabeledHeaderDate(headerLines) {
+    const labelRx = /\b(report\s*date|run\s*date|as\s*of|generated|printed)\b/i;
+    for (const line of headerLines) {
+      if (labelRx.test(line)) {
+        const ds = findAllDatesInString(line);
+        if (ds.length) {
+          // Prefer the first date on that labeled line
+          return ds[0];
+        }
+      }
+    }
+    return null;
+  }
+
+  function pickNonRangeHeaderLatest(headerLines) {
+    const ignoreRx = /\b(from|to|through|thru|range)\b/i;
+    const candidates = [];
+    for (const line of headerLines) {
+      if (ignoreRx.test(line)) continue; // skip date ranges in the header
+      const ds = findAllDatesInString(line);
+      for (const d of ds) candidates.push(d);
+    }
+    if (!candidates.length) return null;
+    // choose the max date from non-range header lines
+    return candidates.reduce((a, b) => (b.date > a.date ? b : a));
+  }
+
+  function pickLatestDataDate(csvText) {
     const lines = csvText.split('\n').slice(10);
     let latest = null;
     let latestRaw = null;
@@ -336,19 +443,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
     }
-    if (latest) {
-      dbg('Date found in data (latest):', { raw: latestRaw, iso: latest.toISOString().slice(0,10) });
-      return { date: latest, raw: latestRaw, source: 'data(latest)' };
-    }
-
-    dbgWarn('No date detected anywhere in CSV.');
-    return null;
+    return latest ? { date: latest, raw: latestRaw } : null;
   }
 
   // Finds *all* dates in a string, supporting:
   // - ISO: YYYY-MM-DD (optionally with time)
   // - US slashes: MM/DD/YYYY or MM/DD/YY
-  // - US dashes:  MM-DD-YYYY or MM-DD-YY   <-- this fixes your "10-27-2025" case
+  // - US dashes:  MM-DD-YYYY or MM-DD-YY
   // Returns array of { date: Date, raw: string }
   function findAllDatesInString(str) {
     const out = [];
@@ -373,7 +474,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!isNaN(d)) out.push({ date: d, raw: m[0] });
     }
 
-    // US dashes: MM-DD-YYYY or MM-DD-YY  (NEW)
+    // US dashes: MM-DD-YYYY or MM-DD-YY
     const usDash = /(\d{1,2})-(\d{1,2})-(\d{2,4})/g;
     for (const m of str.matchAll(usDash)) {
       let yyyy = String(m[3]);
